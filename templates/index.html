@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Essay Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Essay Agent — Générateur d'essais</h1>
+
+    <div class="card">
+      <form action="/generate" method="post">
+        <label>Votre sujet</label>
+        <input type="text" name="topic" placeholder="Ex: Intelligence artificielle et éthique" required />
+
+        <label>Utiliser la recherche web ?</label>
+        <select name="use_search">
+          <option value="no">Non</option>
+          <option value="yes">Oui</option>
+        </select>
+
+        <button type="submit">Générer l'essai</button>
+      </form>
+    </div>
+
+    <footer>
+      <p>Reference docx: /mnt/data/project (4).docx</p>
+    </footer>
+  </div>
+</body>
+</html>
+
