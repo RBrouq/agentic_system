@@ -1,33 +1,698 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Essay Agent</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8" />
+  <title>Essay Agent – Agentic System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg: #0f172a;
+      --bg-card: #111827;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59,130,246,0.1);
+      --error: #f97373;
+      --success: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #1f2937, #020617);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+    .page {
+      max-width: 1200px;
+      width: 100%;
+      padding: 24px 16px 32px;
+    }
+    header {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.02em;
+    }
+    header p {
+      margin: 4px 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.45);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+    label {
+      font-size: 0.9rem;
+    }
+    textarea, input[type="text"] {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #020617;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 0.92rem;
+      resize: vertical;
+    }
+    textarea:focus, input:focus {
+      outline: 1px solid var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    .hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 8px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      padding: 6px 10px;
+    }
+    .status {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-height: 1.2em;
+    }
+    .status--error {
+      color: var(--error);
+    }
+    .status--ok {
+      color: var(--success);
+    }
+    .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 4px;
+    }
+    .section-block {
+      margin-bottom: 10px;
+    }
+    pre {
+      background: #020617;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .small {
+      font-size: 0.8rem;
+    }
+    .export-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #020617;
+      border: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.78rem;
+    }
+    .hitl-block {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+    }
+    .inline-checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 10px;
+    }
+    @media (max-width: 1000px) {
+      .result-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Essay Agent — Générateur d'essais</h1>
+  <div class="page">
+    <header>
+      <div>
+        <h1>Essay Agent</h1>
+        <p>
+          Step-by-step agentic workflow with LangGraph – analyze, clarify, plan, draft, critique,
+          and finalize with a human in the loop (or let the AI decide).
+        </p>
+      </div>
+    </header>
 
-    <div class="card">
-      <form action="/generate" method="post">
-        <label>Votre sujet</label>
-        <input type="text" name="topic" placeholder="Ex: Intelligence artificielle et éthique" required />
+    <div class="layout">
+      <!-- LEFT: Input / HITL controls -->
+      <section class="card">
+        <h2>
+          <span>Workflow controls</span>
+          <span class="pill">Input</span>
+        </h2>
 
-        <label>Utiliser la recherche web ?</label>
-        <select name="use_search">
-          <option value="no">Non</option>
-          <option value="yes">Oui</option>
-        </select>
+        <form id="agent-form">
+          <div class="field">
+            <label for="prompt">1. Initial request (used only once per thread)</label><br />
+            <textarea
+              id="prompt"
+              rows="4"
+              placeholder="Describe your essay or question (used only for the first step)..."
+            ></textarea>
+            <div class="hint">
+              First click on <b>Run / Continue</b> will store this prompt for the whole thread.
+              Next clicks reuse the same prompt and only apply your new feedback.
+            </div>
+          </div>
 
-        <button type="submit">Générer l'essai</button>
-      </form>
+          <input type="hidden" name="thread_id" id="thread_id" value="" />
+
+          <div class="hitl-block">
+            <div class="subtitle">2. Clarifications (HITL #1)</div>
+            <div class="hint">
+              After the first run, the agent proposes clarification questions. Answer them here and click
+              <b>Run / Continue</b> to move to the plan.  
+              Or check “let AI continue” to skip this step.
+            </div>
+            <div class="field">
+              <label for="clarification_answers">Your answers to clarification questions</label><br />
+              <textarea
+                id="clarification_answers"
+                rows="2"
+                placeholder="Reply to the clarification questions shown on the right..."
+              ></textarea>
+            </div>
+            <div class="field">
+              <label class="inline-checkbox">
+                <input type="checkbox" id="skip_clarification" />
+                <span>Let the AI continue without my clarifications (auto-advance)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="hitl-block">
+            <div class="subtitle">3. Plan review (HITL #2)</div>
+            <div class="hint">
+              Once the outline is generated, you can request changes here. Then click
+              <b>Run / Continue</b> to update the plan and move to research + drafting.  
+              Or check “let AI continue” to skip this step.
+            </div>
+            <div class="field">
+              <label for="plan_feedback">Feedback on the outline / plan</label><br />
+              <textarea
+                id="plan_feedback"
+                rows="2"
+                placeholder="e.g. “Add a section on risks”, “Shorter intro”, etc."
+              ></textarea>
+            </div>
+            <div class="field">
+              <label class="inline-checkbox">
+                <input type="checkbox" id="skip_plan_review" />
+                <span>Let the AI continue without reviewing the plan</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="hitl-block">
+            <div class="subtitle">4. Draft loop (HITL #3)</div>
+            <div class="hint">
+              When a draft + critique appear, you can either request changes or approve the draft,
+              or let the AI finalize directly.
+            </div>
+            <div class="field">
+              <label for="draft_feedback_human">Feedback on the current draft</label><br />
+              <textarea
+                id="draft_feedback_human"
+                rows="2"
+                placeholder="e.g. “Tone too formal”, “Add more data in section 2”, ..."
+              ></textarea>
+            </div>
+            <div class="field">
+              <label class="inline-checkbox">
+                <input type="checkbox" id="draft_approved" />
+                <span>Approve the current draft and move to finalization</span>
+              </label>
+            </div>
+            <div class="field">
+              <label class="inline-checkbox">
+                <input type="checkbox" id="skip_draft_review" />
+                <span>Let the AI finalize without explicit approval</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="hitl-block">
+            <div class="subtitle">5. Final tweaks (HITL #4)</div>
+            <div class="hint">
+              After finalization, you can still request minor changes on the final version.
+            </div>
+            <div class="field">
+              <label for="final_feedback">Final tweaks</label><br />
+              <textarea
+                id="final_feedback"
+                rows="2"
+                placeholder="Last tweaks for the final version (length, tone, formatting, etc.)"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn-primary" id="btn-run">
+              Run / Continue workflow
+            </button>
+            <button type="button" id="btn-reset-thread" class="btn-secondary">
+              Reset thread
+            </button>
+            <button type="button" id="btn-clear" class="btn-ghost">
+              Clear all fields
+            </button>
+          </div>
+
+          <div id="status" class="status"></div>
+        </form>
+
+        <div class="small" style="margin-top: 10px;">
+          <span class="badge">
+            <span>Thread ID:</span>
+            <code id="thread-display">none</code>
+          </span>
+        </div>
+      </section>
+
+      <!-- RIGHT: Results -->
+      <section class="card">
+        <h2>
+          <span>Result</span>
+          <span class="pill">Output</span>
+        </h2>
+
+        <div id="result-section" style="display: none;">
+          <div class="section-block">
+            <div class="subtitle">Summary</div>
+            <div class="small">
+              Mode: <code id="res-mode">–</code> ·
+              Plan validated: <code id="res-plan-valid">–</code> ·
+              Saved: <code id="res-saved">–</code> ·
+              Final approved: <code id="res-final-approved">–</code>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="subtitle">Clarifications</div>
+            <div class="result-grid">
+              <div>
+                <div class="small">Questions from agent</div>
+                <pre id="res-clarif-questions">–</pre>
+              </div>
+              <div>
+                <div class="small">Your answers</div>
+                <pre id="res-clarif-answers">–</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-grid">
+            <div>
+              <div class="section-block">
+                <div class="subtitle">Topic & instructions</div>
+                <pre id="res-topic">–</pre>
+                <div class="small" style="margin-top:4px;">
+                  Instructions:<br />
+                  <pre id="res-instructions">–</pre>
+                </div>
+              </div>
+
+              <div class="section-block">
+                <div class="subtitle">Plan</div>
+                <pre id="res-plan">–</pre>
+              </div>
+
+              <div class="section-block">
+                <div class="subtitle">Research notes</div>
+                <pre id="res-research">–</pre>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-block">
+                <div class="subtitle">Draft</div>
+                <pre id="res-draft">–</pre>
+              </div>
+
+              <div class="section-block">
+                <div class="subtitle">Critique</div>
+                <pre id="res-critique">–</pre>
+              </div>
+
+              <div class="section-block">
+                <div class="subtitle">Final draft</div>
+                <pre id="res-final-draft">–</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-block">
+            <div class="subtitle">Final answer (returned to user)</div>
+            <pre id="res-answer">–</pre>
+          </div>
+
+          <div class="section-block">
+            <div class="subtitle">Raw JSON</div>
+            <pre id="res-raw-json" class="small">{}</pre>
+          </div>
+
+          <div class="export-bar">
+            <button type="button" id="btn-export-docx" class="btn-secondary">
+              Export as .docx
+            </button>
+            <button type="button" id="btn-export-pdf" class="btn-secondary">
+              Export as .pdf
+            </button>
+            <span class="hint">Exports use the final answer + topic.</span>
+          </div>
+        </div>
+
+        <div id="placeholder-section" class="small" style="color: var(--text-muted);">
+          1) Fill the initial prompt and click <b>Run / Continue</b>.<br />
+          2) Answer clarifications (or tick “let AI continue”), click again.<br />
+          3) Review the plan (or tick “let AI continue”), click again.<br />
+          4) Review draft + critique, give feedback / approve / let AI finalize, click again.<br />
+          5) Optionally give final tweaks, click again.
+        </div>
+      </section>
     </div>
-
-    <footer>
-      <p>Reference docx: /mnt/data/project (4).docx</p>
-    </footer>
   </div>
+
+  <script>
+    const form = document.getElementById("agent-form");
+    const statusEl = document.getElementById("status");
+    const threadInput = document.getElementById("thread_id");
+    const threadDisplay = document.getElementById("thread-display");
+
+    const resultSection = document.getElementById("result-section");
+    const placeholderSection = document.getElementById("placeholder-section");
+
+    const resMode = document.getElementById("res-mode");
+    const resPlanValid = document.getElementById("res-plan-valid");
+    const resSaved = document.getElementById("res-saved");
+    const resFinalApproved = document.getElementById("res-final-approved");
+
+    const resClarifQ = document.getElementById("res-clarif-questions");
+    const resClarifA = document.getElementById("res-clarif-answers");
+
+    const resTopic = document.getElementById("res-topic");
+    const resInstructions = document.getElementById("res-instructions");
+    const resPlan = document.getElementById("res-plan");
+    const resResearch = document.getElementById("res-research");
+    const resDraft = document.getElementById("res-draft");
+    const resCritique = document.getElementById("res-critique");
+    const resFinalDraft = document.getElementById("res-final-draft");
+    const resAnswer = document.getElementById("res-answer");
+    const resRawJson = document.getElementById("res-raw-json");
+
+    const btnResetThread = document.getElementById("btn-reset-thread");
+    const btnClear = document.getElementById("btn-clear");
+    const btnExportDocx = document.getElementById("btn-export-docx");
+    const btnExportPdf = document.getElementById("btn-export-pdf");
+
+    const promptInput = document.getElementById("prompt");
+    const clarifAnswersInput = document.getElementById("clarification_answers");
+    const planFeedbackInput = document.getElementById("plan_feedback");
+    const draftFeedbackInput = document.getElementById("draft_feedback_human");
+    const draftApprovedInput = document.getElementById("draft_approved");
+    const skipClarifInput = document.getElementById("skip_clarification");
+    const skipPlanInput = document.getElementById("skip_plan_review");
+    const skipDraftInput = document.getElementById("skip_draft_review");
+    const finalFeedbackInput = document.getElementById("final_feedback");
+
+    let lastResult = null;
+    let basePrompt = ""; // stored initial prompt for the whole thread
+
+    function setStatus(msg, kind = "normal") {
+      statusEl.textContent = msg || "";
+      statusEl.classList.remove("status--error", "status--ok");
+      if (kind === "error") statusEl.classList.add("status--error");
+      if (kind === "ok") statusEl.classList.add("status--ok");
+    }
+
+    function fillResult(data) {
+      lastResult = data || null;
+
+      if (!data || data.error) {
+        resultSection.style.display = "none";
+        placeholderSection.style.display = "block";
+        if (data && data.error) {
+          setStatus("Error: " + data.error, "error");
+        }
+        return;
+      }
+
+      // Show section
+      resultSection.style.display = "block";
+      placeholderSection.style.display = "none";
+
+      // Summary
+      resMode.textContent = data.mode || "unknown";
+      resPlanValid.textContent = data.plan_validated != null ? String(data.plan_validated) : "–";
+      resSaved.textContent = data.saved != null ? String(data.saved) : "–";
+      resFinalApproved.textContent = data.final_approved != null ? String(data.final_approved) : "–";
+
+      // Clarifications
+      resClarifQ.textContent = data.clarification_questions || "–";
+      resClarifA.textContent = data.clarification_answers || "–";
+
+      // Topic / instructions / plan / research
+      resTopic.textContent = data.topic || "–";
+      resInstructions.textContent = data.instructions || "–";
+      resPlan.textContent = data.plan || "–";
+      resResearch.textContent = data.research_notes || "–";
+
+      // Draft & critique & final
+      resDraft.textContent = data.draft || "–";
+      resCritique.textContent = data.critique || "–";
+      resFinalDraft.textContent = data.final_draft || (data.answer || "–");
+      resAnswer.textContent = data.answer || "–";
+
+      resRawJson.textContent = JSON.stringify(data, null, 2);
+
+      // Thread
+      if (data.thread_id) {
+        threadInput.value = data.thread_id;
+        threadDisplay.textContent = data.thread_id;
+      }
+
+      setStatus("Done.", "ok");
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setStatus("Running / continuing workflow...");
+      resultSection.style.display = "none";
+      placeholderSection.style.display = "block";
+
+      try {
+        // If this is the first run for this thread, capture the base prompt
+        if (!basePrompt) {
+          const raw = (promptInput.value || "").trim();
+          if (!raw) {
+            setStatus("Please provide an initial prompt for the first run.", "error");
+            return;
+          }
+          basePrompt = raw;
+        }
+
+        const fd = new FormData();
+        fd.append("prompt", basePrompt); // always reuse the same prompt for the thread
+        fd.append("thread_id", threadInput.value || "");
+
+        // HITL fields (they can be empty depending on the current step)
+        fd.append("clarification_answers", clarifAnswersInput.value || "");
+        fd.append("plan_feedback", planFeedbackInput.value || "");
+        fd.append("draft_feedback_human", draftFeedbackInput.value || "");
+        fd.append("final_feedback", finalFeedbackInput.value || "");
+
+        // draft_approved: send only if checked, otherwise let backend keep None
+        if (draftApprovedInput.checked) {
+          fd.append("draft_approved", "true");
+        }
+
+        // Skip flags: send only if checked
+        if (skipClarifInput.checked) {
+          fd.append("skip_clarification", "on");
+        }
+        if (skipPlanInput.checked) {
+          fd.append("skip_plan_review", "on");
+        }
+        if (skipDraftInput.checked) {
+          fd.append("skip_draft_review", "on");
+        }
+
+        const res = await fetch("/api/run", {
+          method: "POST",
+          body: fd,
+        });
+
+        const data = await res.json();
+        fillResult(data);
+      } catch (err) {
+        console.error(err);
+        setStatus("Unexpected error (see console).", "error");
+      }
+    });
+
+    btnResetThread.addEventListener("click", () => {
+      threadInput.value = "";
+      threadDisplay.textContent = "none";
+      basePrompt = "";
+      setStatus("Thread reset. Next run will use a new thread_id and can change the prompt.");
+    });
+
+    btnClear.addEventListener("click", () => {
+      promptInput.value = "";
+      clarifAnswersInput.value = "";
+      planFeedbackInput.value = "";
+      draftFeedbackInput.value = "";
+      finalFeedbackInput.value = "";
+      draftApprovedInput.checked = false;
+      skipClarifInput.checked = false;
+      skipPlanInput.checked = false;
+      skipDraftInput.checked = false;
+      basePrompt = "";
+      setStatus("");
+    });
+
+    async function exportFile(format) {
+      if (!lastResult || !lastResult.answer) {
+        alert("Run the agent first to generate an answer.");
+        return;
+      }
+      try {
+        setStatus(`Exporting ${format.toUpperCase()}...`);
+        const fd = new FormData();
+        fd.append("answer", lastResult.answer);
+        fd.append("topic", lastResult.topic || "Essay");
+
+        const res = await fetch(`/api/export/${format}`, {
+          method: "POST",
+          body: fd,
+        });
+
+        if (!res.ok) {
+          const txt = await res.text();
+          setStatus("Export error: " + txt, "error");
+          return;
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setStatus("Export ready.", "ok");
+      } catch (err) {
+        console.error(err);
+        setStatus("Export failed.", "error");
+      }
+    }
+
+    btnExportDocx.addEventListener("click", () => exportFile("docx"));
+    btnExportPdf.addEventListener("click", () => exportFile("pdf"));
+  </script>
 </body>
 </html>
-

@@ -1,110 +1,198 @@
+import os
+from typing import Optional
+
+import textwrap
+from tempfile import NamedTemporaryFile
+
+from fastapi.responses import FileResponse
+from docx import Document
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+
 from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
+from dotenv import load_dotenv
 
-from agents.analyzer import Analyzer
-from agents.planner import Planner
-from agents.writer import Writer
-from agents.critic import Critic
-from tools.search_tool import WebSearcher
-from tools.export_tool import save_docx, save_pdf
+from langgraph_graph import run_essay_graph
 
-import os
+# Load env vars
+load_dotenv()
 
-app = FastAPI()
-templates = Jinja2Templates(directory="templates")
+app = FastAPI(title="Essay Agent – HITL Workflow")
+
+# Static + templates (adapt paths to your project)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
-# Initialisation des agents
-analyzer = Analyzer()
-planner = Planner()
-writer = Writer()
-critic = Critic()
-searcher = WebSearcher()
+
+def _safe_filename(title: str, ext: str) -> str:
+    # Very simple slug
+    base = "".join(
+        c if c.isalnum() or c in ("-", "_") else "_"
+        for c in title.strip().replace(" ", "_")
+    )
+    if not base:
+        base = "essay"
+    return f"{base}.{ext}"
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def index(request: Request):
+    """
+    Home page.
+    """
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+        },
+    )
 
 
-@app.post("/generate")
-def generate(request: Request, topic: str = Form(...), use_search: str = Form("no")):
-    # Étape 1 : analyse du sujet
-    analysis = analyzer.run(topic)
+@app.post("/api/run")
+async def run_agent(
+    prompt: str = Form(...),
+    thread_id: Optional[str] = Form(None),
 
-    # Étape 2 : recherche web (optionnelle)
-    sources = []
-    if use_search.lower() == "yes":
-        q = f"{topic} overview"
-        sources = searcher.search(q)  # list of dicts {title,url,snippet}
+    clarification_answers: Optional[str] = Form(None),
+    plan_feedback: Optional[str] = Form(None),
+    draft_feedback_human: Optional[str] = Form(None),
+    draft_approved: Optional[str] = Form(None),  # will be "true" or None
+    final_feedback: Optional[str] = Form(None),
 
-    # Étape 3 : plan de l'essai
-    plan = planner.run(analysis, sources=sources)
-
-    # Étape 4 : génération du brouillon
-    draft = writer.run(plan, sources=sources)
-
-    # Étape 5 : critique automatique (non appliquée pour réécriture)
-    critique = critic.run(draft)
-
-    # Retourner la page avec le brouillon et le formulaire de validation humaine
-    return templates.TemplateResponse("result.html", {
-        "request": request,
-        "topic": topic,
-        "analysis": analysis,
-        "plan": plan,
-        "draft": draft,
-        "critique": critique,
-        "sources": sources
-    })
-
-
-@app.post("/finalize")
-def finalize(
-    request: Request,
-    topic: str = Form(...),
-    plan: str = Form(...),
-    draft: str = Form(...),
-    hints: str = Form("")
+    skip_clarification: Optional[str] = Form(None),  # "on" if checked
+    skip_plan_review: Optional[str] = Form(None),
+    skip_draft_review: Optional[str] = Form(None),
 ):
-    # Générer la version finale avec les suggestions humaines
-    final_draft = writer.run(plan, sources=None, hints=hints)
-    critique = critic.run(final_draft)
+    """
+    Run the LangGraph workflow for a given user prompt, with optional HITL inputs.
+    """
 
-    return templates.TemplateResponse("result.html", {
-        "request": request,
-        "topic": topic,
-        "analysis": "Validation humaine appliquée",
-        "plan": plan,
-        "draft": final_draft,
-        "critique": critique,
-        "sources": []
-    })
+    # Convert draft_approved checkbox to bool or None
+    draft_approved_bool: Optional[bool] = None
+    if draft_approved is not None:
+        # if checkbox is checked, HTML sends "on" (or "true" from JS)
+        draft_approved_bool = True
 
+    # Convert skip checkboxes to bools
+    skip_clarification_bool = bool(skip_clarification)
+    skip_plan_review_bool = bool(skip_plan_review)
+    skip_draft_review_bool = bool(skip_draft_review)
 
-@app.post("/download/docx")
-def download_docx(topic: str = Form(...), content: str = Form(...)):
-    out = save_docx(topic, content)
+    try:
+        result = run_essay_graph(
+            prompt,
+            thread_id=thread_id,
+            clarification_answers=clarification_answers,
+            plan_feedback=plan_feedback,
+            draft_feedback_human=draft_feedback_human,
+            draft_approved=draft_approved_bool,
+            final_feedback=final_feedback,
+            skip_clarification=skip_clarification_bool,
+            skip_plan_review=skip_plan_review_bool,
+            skip_draft_review=skip_draft_review_bool,
+        )
+        return JSONResponse(
+            {
+                "thread_id": result.get("thread_id"),
+                "mode": result.get("mode"),
+                "topic": result.get("topic"),
+                "instructions": result.get("instructions"),
+                "clarification_questions": result.get("clarification_questions"),
+                "clarification_answers": result.get("clarification_answers"),
+                "plan": result.get("plan"),
+                "plan_validated": result.get("plan_validated"),
+                "research_notes": result.get("research_notes"),
+                "draft": result.get("draft"),
+                "critique": result.get("critique"),
+                "final_draft": result.get("final_draft"),
+                "answer": result.get("answer"),
+                "saved": result.get("saved"),
+                "final_approved": result.get("final_approved"),
+            }
+        )
+    except Exception as e:
+        return JSONResponse(
+            {"error": str(e)},
+            status_code=500,
+        )
+
+@app.post("/api/export/docx")
+async def export_docx(
+    answer: str = Form(...),
+    topic: str = Form("Essay"),
+) -> FileResponse:
+    """
+    Create a .docx file from the essay answer and return it.
+    """
+    with NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        doc = Document()
+        doc.add_heading(topic, level=1)
+        doc.add_paragraph("")  # blank line
+
+        for line in answer.splitlines():
+            if line.strip():
+                doc.add_paragraph(line)
+            else:
+                doc.add_paragraph("")  # keep blank lines
+
+        doc.save(tmp.name)
+        filename = _safe_filename(topic, "docx")
+
     return FileResponse(
-        out,
-        filename=os.path.basename(out),
-        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        path=tmp.name,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ),
+        filename=filename,
     )
 
 
-@app.post("/download/pdf")
-def download_pdf(topic: str = Form(...), content: str = Form(...)):
-    out = save_pdf(topic, content)
+@app.post("/api/export/pdf")
+async def export_pdf(
+    answer: str = Form(...),
+    topic: str = Form("Essay"),
+) -> FileResponse:
+    """
+    Create a simple A4 PDF from the essay answer and return it.
+    """
+    with NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        c = canvas.Canvas(tmp.name, pagesize=A4)
+        width, height = A4
+
+        # Title
+        text_obj = c.beginText(50, height - 50)
+        text_obj.setFont("Helvetica-Bold", 16)
+        text_obj.textLine(topic)
+        text_obj.moveCursor(0, -20)
+
+        # Body
+        text_obj.setFont("Helvetica", 11)
+        max_chars = 90  # quick-and-dirty wrapping per line
+        for line in answer.splitlines():
+            if not line.strip():
+                text_obj.textLine("")  # blank line
+                continue
+
+            for chunk in textwrap.wrap(line, max_chars):
+                # If we're too low on the page, start a new page
+                if text_obj.getY() < 50:
+                    c.drawText(text_obj)
+                    c.showPage()
+                    text_obj = c.beginText(50, height - 50)
+                    text_obj.setFont("Helvetica", 11)
+                text_obj.textLine(chunk)
+
+        c.drawText(text_obj)
+        c.showPage()
+        c.save()
+
+        filename = _safe_filename(topic, "pdf")
+
     return FileResponse(
-        out,
-        filename=os.path.basename(out),
-        media_type='application/pdf'
+        path=tmp.name,
+        media_type="application/pdf",
+        filename=filename,
     )
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
