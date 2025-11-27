@@ -70,27 +70,27 @@ agentic_system/
 
 ## Installation
 
-### 1️⃣ Clone the project
+### 1️. Clone the project
 
 ```bash
 git clone https://github.com/RBrouq/agentic_system
 cd agentic_system
 ```
 
-### 2️⃣ Create virtual environment
+### 2️. Create virtual environment
 
 ```bash
 python -m venv venv
 source venv/bin/activate
 ```
 
-### 3️⃣ Install dependencies
+### 3️. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4️⃣ Add your `.env`
+### 4️. Add your `.env`
 
 At the root of the project:
 
@@ -102,7 +102,7 @@ Make sure this is a valid OpenAI API key with access to the Chat Completions API
 
 ---
 
-## ▶️ Running the App
+## 5. Running the App
 
 From the project root:
 
@@ -116,7 +116,7 @@ http://127.0.0.1:8000/
 
 ---
 
-## 🧠 The HITL Workflow Explained
+## The HITL Workflow Explained
 
 The LangGraph DAG for essay mode roughly follows this structure:
 
@@ -151,7 +151,7 @@ You can then call the API again with the same `thread_id` and the additional hum
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### POST `/api/run`
 
@@ -224,7 +224,7 @@ The PDF is generated using ReportLab with basic line wrapping and multiple-page 
 
 ---
 
-## 🧪 Testing the Workflow in Python
+## Testing the Workflow in Python
 
 You can directly use the core function from Python (outside of FastAPI):
 
@@ -249,7 +249,7 @@ To use the HITL steps, call `run_essay_graph` multiple times with the same `thre
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 | Component   | Technology                          |
 |------------|--------------------------------------|
