@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 
 import textwrap
@@ -15,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
-from langgraph_graph import run_essay_graph
+from src.runner import run_essay_graph
 
 # Load env vars
 load_dotenv()

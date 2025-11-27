@@ -20,4 +20,3 @@ reportlab
 
 tavily-python
 langchain-community
-sqlite3
